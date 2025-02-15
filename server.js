@@ -1,21 +1,22 @@
+require("dotenv").config(); // ✅ Load .env variables
 const jwt = require("jsonwebtoken");
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
 const authRoutes = require("./routes/auth");
-const User = require("./models/User"); // Fix for auth/me route
+const User = require("./models/User"); // ✅ Fix for user schema
+const Dish = require("./models/Dish"); // ✅ Fix for Dish schema
 
 const app = express();
 const PORT = 5000;
-const Dish = require("./models/Dish"); // Import Dish model
 
-// ✅ MongoDB Connection
-const MONGO_URI = "mongodb://127.0.0.1:27017/zero_waste_kitchen5";
-
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log("✅ MongoDB Connected Successfully"))
-  .catch((err) => console.error("❌ MongoDB Connection Error:", err));
-
+// ✅ MongoDB Connection using .env variable
+mongoose.connect(process.env.MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+})
+.then(() => console.log("✅ MongoDB Connected Successfully"))
+.catch((err) => console.error("❌ MongoDB Connection Error:", err));
 
 // ✅ Middleware
 app.use(express.json());
@@ -104,7 +105,6 @@ app.delete("/api/delete_item", async (req, res) => {
 const getDishSuggestions = async (userItems) => {
     try {
         const allDishes = await Dish.find({});
-
         let suggestedDishes = [];
 
         userItems.forEach((item) => {
@@ -116,26 +116,22 @@ const getDishSuggestions = async (userItems) => {
                 suggestedDishes.push({
                     name: dish.name,
                     ingredients: dish.ingredients,
-                    suggested_due_to: [item],  // 🔥 FIX: Store as an array, not a string
+                    suggested_due_to: [item],
                     youtube_url: `https://www.youtube.com/results?search_query=${dish.name.replace(" ", "+")}+recipe`
                 });
             });
         });
 
-        return suggestedDishes;
+        return Array.from(new Set(suggestedDishes)); // 🔥 FIX: Remove duplicate dishes
     } catch (error) {
         console.error("❌ Error in getDishSuggestions:", error);
         return [];
     }
 };
 
-
-
 // 🟢 Fetch Dish Suggestions for Logged-in User
-// Fetch Dish Suggestions for Logged-in User
 app.get("/api/suggest_dishes/:username", async (req, res) => {
     try {
-        // Get the logged-in user's items
         const user = await User.findOne({ name: req.params.username });
 
         if (!user || !user.items || user.items.length === 0) {
@@ -150,14 +146,11 @@ app.get("/api/suggest_dishes/:username", async (req, res) => {
         }
 
         res.json({ dishes: suggestedDishes });
-
     } catch (error) {
         console.error("❌ Error suggesting dishes:", error);
         res.status(500).json({ message: "Internal server error" });
     }
 });
-
-
 
 // ✅ Fetch Authenticated User
 app.get("/api/auth/me", async (req, res) => {
@@ -165,7 +158,7 @@ app.get("/api/auth/me", async (req, res) => {
         const token = req.headers.authorization?.split(" ")[1];
         if (!token) return res.status(401).json({ message: "Unauthorized" });
 
-        const decoded = jwt.verify(token, "your-secret-key");
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
         const user = await User.findById(decoded.userId).select("-password");
 
         if (!user) return res.status(404).json({ message: "User not found" });
@@ -177,9 +170,7 @@ app.get("/api/auth/me", async (req, res) => {
     }
 });
 
-
 // 🟢 Start Server
 app.listen(PORT, () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
 });
-console.log("Checking getDishSuggestions function:", getDishSuggestions);
