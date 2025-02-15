@@ -12,15 +12,10 @@ const Dish = require("./models/Dish"); // Import Dish model
 // ✅ MongoDB Connection
 const MONGO_URI = "mongodb://127.0.0.1:27017/zero_waste_kitchen5";
 
-mongoose.connect(MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-})
-.then(() => console.log("✅ Connected to MongoDB"))
-.catch((error) => {
-    console.error("❌ MongoDB Connection Error:", error);
-    process.exit(1);
-});
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log("✅ MongoDB Connected Successfully"))
+  .catch((err) => console.error("❌ MongoDB Connection Error:", err));
+
 
 // ✅ Middleware
 app.use(express.json());
