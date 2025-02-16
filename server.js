@@ -77,34 +77,42 @@ app.post("/api/add_items", async (req, res) => {
     }
 });
 
-// 🟢 Delete an Ingredient (Fixed Syncing Expiry Dates)
 app.delete("/api/delete_item", async (req, res) => {
-    const { username, item } = req.body;
-    if (!username || !item) {
-        return res.status(400).json({ message: "Username and item are required" });
+  const { username, item } = req.query; // Get values from query parameters
+  console.log("🔹 Received DELETE request:", { username, item });
+
+  if (!username || !item) {
+    console.log("❌ Missing username or item.");
+    return res.status(400).json({ error: "Missing username or item." });
+  }
+
+  try {
+    const user = await User.findOne({ name: username }).exec();
+    if (!user || !user.items.includes(item)) {
+      console.log("❌ User or item not found.");
+      return res.status(404).json({ error: "User or item not found." });
     }
-    try {
-        const userData = await UserIngredients.findOne({ user_id: username });
-        if (!userData) {
-            return res.status(404).json({ message: "User data not found" });
-        }
-        const indexToRemove = userData.ingredients.indexOf(item);
-        if (indexToRemove !== -1) {
-            userData.ingredients.splice(indexToRemove, 1);
-            userData.expiry_dates.splice(indexToRemove, 1);
-        }
-        await userData.save();
-        res.json({ message: "✅ Item deleted successfully!" });
-    } catch (error) {
-        console.error("❌ Error deleting item:", error);
-        res.status(500).json({ message: "Internal server error" });
-    }
+
+    const itemIndex = user.items.indexOf(item);
+    user.items.splice(itemIndex, 1);
+    user.expiryDates.splice(itemIndex, 1);
+
+    await user.save();
+    console.log("✅ Item deleted successfully.");
+    res.json({ message: "Item deleted successfully." });
+  } catch (error) {
+    console.error("❌ Server Error:", error);
+    res.status(500).json({ error: "Server error." });
+  }
 });
+
+  
 
 // ✅ AI-Based Dish Suggestion Logic
 const getDishSuggestions = async (userItems) => {
     try {
         const allDishes = await Dish.find({});
+
         let suggestedDishes = [];
 
         userItems.forEach((item) => {
@@ -116,41 +124,68 @@ const getDishSuggestions = async (userItems) => {
                 suggestedDishes.push({
                     name: dish.name,
                     ingredients: dish.ingredients,
-                    suggested_due_to: [item],
+                    suggested_due_to: [item],  // 🔥 FIX: Store as an array, not a string
                     youtube_url: `https://www.youtube.com/results?search_query=${dish.name.replace(" ", "+")}+recipe`
                 });
             });
         });
 
-        return Array.from(new Set(suggestedDishes)); // 🔥 FIX: Remove duplicate dishes
+        return suggestedDishes;
     } catch (error) {
         console.error("❌ Error in getDishSuggestions:", error);
         return [];
     }
 };
 
+
+
 // 🟢 Fetch Dish Suggestions for Logged-in User
+// Fetch Dish Suggestions for Logged-in User
 app.get("/api/suggest_dishes/:username", async (req, res) => {
     try {
+        // Fetch user data from MongoDB
         const user = await User.findOne({ name: req.params.username });
 
         if (!user || !user.items || user.items.length === 0) {
             return res.status(404).json({ message: "No ingredients found for this user" });
         }
 
-        // 🔥 Pass ONLY the logged-in user's items to the function
-        const suggestedDishes = await getDishSuggestions(user.items);
+        // ✅ Pair items with their expiry dates
+        const itemsWithExpiry = user.items.map((item, index) => ({
+            name: item,
+            expiryDate: new Date(user.expiryDates[index]) // Convert expiry date to Date object
+        }));
 
-        if (suggestedDishes.length === 0) {
-            return res.status(404).json({ message: "No dish suggestions available" });
+        // ✅ Filter items expiring within 20 days
+        const today = new Date();
+        const thresholdDate = new Date();
+        thresholdDate.setDate(today.getDate() + 20);
+
+        const validItems = itemsWithExpiry
+            .filter(item => item.expiryDate <= thresholdDate)
+            .map(item => item.name); // Extract only item names
+
+        if (validItems.length === 0) {
+            return res.status(404).json({ message: "No ingredients expiring within 20 days." });
+        }
+
+        // ✅ Fetch dish suggestions
+        const suggestedDishes = await getDishSuggestions(validItems);
+
+        if (!suggestedDishes || suggestedDishes.length === 0) {
+            return res.status(404).json({ message: "No dish suggestions available for expiring items." });
         }
 
         res.json({ dishes: suggestedDishes });
+
     } catch (error) {
         console.error("❌ Error suggesting dishes:", error);
         res.status(500).json({ message: "Internal server error" });
     }
 });
+
+
+
 
 // ✅ Fetch Authenticated User
 app.get("/api/auth/me", async (req, res) => {
@@ -158,7 +193,7 @@ app.get("/api/auth/me", async (req, res) => {
         const token = req.headers.authorization?.split(" ")[1];
         if (!token) return res.status(401).json({ message: "Unauthorized" });
 
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const decoded = jwt.verify(token, "your-secret-key");
         const user = await User.findById(decoded.userId).select("-password");
 
         if (!user) return res.status(404).json({ message: "User not found" });
@@ -170,7 +205,10 @@ app.get("/api/auth/me", async (req, res) => {
     }
 });
 
+
 // 🟢 Start Server
 app.listen(PORT, () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
 });
+console.log("Checking getDishSuggestions function:", getDishSuggestions);
+
