@@ -205,6 +205,29 @@ app.get("/api/auth/me", async (req, res) => {
     }
 });
 
+// ✅ Ingredient Schema & Model
+const ItemSchema = new mongoose.Schema({
+    ingredients: [String]
+});
+
+const Item = mongoose.model("Item", ItemSchema, "items");
+
+// ✅ Endpoint to get all unique ingredient names
+app.get("/api/ingredients", async (req, res) => {
+    try {
+        const items = await Item.find({});
+        const uniqueIngredients = new Set();
+
+        items.forEach(item => {
+            item.ingredients.forEach(ingredient => uniqueIngredients.add(ingredient));
+        });
+
+        res.json(Array.from(uniqueIngredients));
+    } catch (error) {
+        console.error("❌ Error fetching ingredients:", error);
+        res.status(500).json({ message: "Internal Server Error" });
+    }
+});
 
 // 🟢 Start Server
 app.listen(PORT, () => {
