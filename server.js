@@ -118,7 +118,7 @@ const getDishSuggestions = async (userItems) => {
         userItems.forEach((item) => {
             let matchedDishes = allDishes
                 .filter(dish => dish.ingredients.includes(item)) // Find dishes containing the item
-                .slice(0, 4); // Limit to 4 dishes per item
+                .slice(0, 6); // Limit to 4 dishes per item
 
             matchedDishes.forEach((dish) => {
                 suggestedDishes.push({
@@ -132,7 +132,7 @@ const getDishSuggestions = async (userItems) => {
 
         return suggestedDishes;
     } catch (error) {
-        console.error("❌ Error in getDishSuggestions:", error);
+        console.error("NO Suggestions for your items try adding more", error);
         return [];
     }
 };
@@ -224,7 +224,7 @@ app.get("/api/ingredients", async (req, res) => {
 
         res.json(Array.from(uniqueIngredients));
     } catch (error) {
-        console.error("❌ Error fetching ingredients:", error);
+        console.error("❌no ingredient found:", error);
         res.status(500).json({ message: "Internal Server Error" });
     }
 });
