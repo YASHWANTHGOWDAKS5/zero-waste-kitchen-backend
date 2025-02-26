@@ -6,6 +6,8 @@ const mongoose = require("mongoose");
 const authRoutes = require("./routes/auth");
 const User = require("./models/User"); // ✅ Fix for user schema
 const Dish = require("./models/Dish"); // ✅ Fix for Dish schema
+const reviewRoutes = require("./routes/reviews");
+
 
 const app = express();
 const PORT = 5000;
@@ -21,7 +23,7 @@ mongoose.connect(process.env.MONGO_URI, {
 // ✅ Middleware
 app.use(express.json());
 app.use(cors());
-
+app.use("/api/reviews", reviewRoutes);
 // ✅ Auth Routes
 app.use("/api/auth", authRoutes);
 
