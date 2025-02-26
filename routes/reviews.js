@@ -1,11 +1,9 @@
+require("dotenv").config(); // Load environment variables
 const express = require("express");
 const router = express.Router();
 const mongoose = require("mongoose");
-const dotenv = require("dotenv");
 
-dotenv.config(); // Load environment variables
-
-// Connect to MongoDB Atlas
+// Connect to MongoDB Atlas using .env file
 mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
@@ -13,7 +11,7 @@ mongoose.connect(process.env.MONGO_URI, {
 
 // Define Review Schema
 const ReviewSchema = new mongoose.Schema({
-  name: String,  // New field for user name
+  name: String,
   text: String,
   date: { type: Date, default: Date.now },
 });
@@ -33,13 +31,7 @@ router.get("/", async (req, res) => {
 // POST a new review
 router.post("/", async (req, res) => {
   try {
-    const { name, text } = req.body;
-    
-    if (!name || !text) {
-      return res.status(400).json({ error: "Name and review text are required" });
-    }
-
-    const newReview = new Review({ name, text });
+    const newReview = new Review({ name: req.body.name, text: req.body.text });
     await newReview.save();
     res.json(newReview);
   } catch (error) {
