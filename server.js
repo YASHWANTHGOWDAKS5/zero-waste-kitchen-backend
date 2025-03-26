@@ -34,11 +34,10 @@ const UserIngredients = mongoose.model("UserIngredients", new mongoose.Schema({
     expiry_dates: [String]
 }, { collection: "user_ingredients" }));
 
-// 🟢 Fetch Ingredients & Expiry Dates
-app.get("/api/getItems", async (req, res) => {
-    const username = decodeURIComponent(req.query.username); // ✅ Correct way to handle query parameters
+app.get("/api/getItems/:username", async (req, res) => {
+    const username = decodeURIComponent(req.params.username);
 
-    if (!username) {
+    if (!username.trim()) {
         return res.status(400).json({ error: "Username is required" });
     }
 
