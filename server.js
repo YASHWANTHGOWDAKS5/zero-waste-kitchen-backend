@@ -35,8 +35,12 @@ const UserIngredients = mongoose.model("UserIngredients", new mongoose.Schema({
 }, { collection: "user_ingredients" }));
 
 // 🟢 Fetch Ingredients & Expiry Dates
-app.get("/api/getItems/:username", async (req, res) => {
-    const username = decodeURIComponent(req.query.username);
+app.get("/api/getItems", async (req, res) => {
+    const username = decodeURIComponent(req.query.username); // ✅ Correct way to handle query parameters
+
+    if (!username) {
+        return res.status(400).json({ error: "Username is required" });
+    }
 
     try {
         const user = await User.findOne({ name: username });
@@ -54,6 +58,7 @@ app.get("/api/getItems/:username", async (req, res) => {
         res.status(500).json({ error: "Server error" });
     }
 });
+
 
 // 🟢 Add Ingredients & Expiry Dates
 app.post("/api/add_items", async (req, res) => {
