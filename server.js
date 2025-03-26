@@ -36,7 +36,7 @@ const UserIngredients = mongoose.model("UserIngredients", new mongoose.Schema({
 
 // 🟢 Fetch Ingredients & Expiry Dates
 app.get("/api/getItems/:username", async (req, res) => {
-    const { username } = req.params;
+    const username = decodeURIComponent(req.query.username);
 
     try {
         const user = await User.findOne({ name: username });
