@@ -8,7 +8,6 @@ const User = require("./models/User"); // ✅ Fix for user schema
 const Dish = require("./models/Dish"); // ✅ Fix for Dish schema
 const reviewRoutes = require("./routes/reviews");
 
-
 const app = express();
 const PORT = 5000;
 
@@ -62,8 +61,7 @@ app.get("/api/getItems/:username", async (req, res) => {
 app.get("/api/getExpiringSoon/:username", async (req, res) => {
     try {
         const { username } = req.params;
-       const user = await User.findOne({ name: username });
-
+        const user = await User.findOne({ name: username });
 
         if (!user) {
             return res.status(404).json({ message: "User not found" });
@@ -100,7 +98,6 @@ app.get("/api/getExpiringSoon/:username", async (req, res) => {
         res.status(500).json({ message: "Error fetching expiring soon items" });
     }
 });
-
 
 // ✅ Fetch Expired Items API
 app.get("/api/getExpiredItems/:username", async (req, res) => {
@@ -162,6 +159,37 @@ app.post("/api/add_items", async (req, res) => {
     }
 });
 
+// 🟢 Update Item Expiry Date
+app.put("/api/update_item", async (req, res) => {
+    const { username, item, expiry_date } = req.body;
+
+    if (!username || !item || !expiry_date) {
+        return res.status(400).json({ error: "Missing required fields." });
+    }
+
+    try {
+        const user = await User.findOne({ name: username });
+
+        if (!user) {
+            return res.status(404).json({ error: "User not found." });
+        }
+
+        const itemIndex = user.items.indexOf(item);
+
+        if (itemIndex === -1) {
+            return res.status(404).json({ error: "Item not found." });
+        }
+
+        user.expiryDates[itemIndex] = expiry_date;
+
+        await user.save();
+        res.json({ message: "Item updated successfully.", user });
+    } catch (err) {
+        console.error("Error updating item:", err);
+        res.status(500).json({ error: "Server error." });
+    }
+});
+
 app.delete("/api/delete_item", async (req, res) => {
   const { username, item } = req.query; // Get values from query parameters
   console.log("🔹 Received DELETE request:", { username, item });
@@ -190,8 +218,6 @@ app.delete("/api/delete_item", async (req, res) => {
     res.status(500).json({ error: "Server error." });
   }
 });
-
-  
 
 // ✅ AI-Based Dish Suggestion Logic
 const getDishSuggestions = async (userItems) => {
@@ -222,10 +248,7 @@ const getDishSuggestions = async (userItems) => {
     }
 };
 
-
-
 // 🟢 Fetch Dish Suggestions for Logged-in User
-// Fetch Dish Suggestions for Logged-in User
 app.get("/api/suggest_dishes/:username", async (req, res) => {
     try {
         // Fetch user data from MongoDB
@@ -268,9 +291,6 @@ app.get("/api/suggest_dishes/:username", async (req, res) => {
         res.status(500).json({ message: "Internal server error" });
     }
 });
-
-
-
 
 // ✅ Fetch Authenticated User
 app.get("/api/auth/me", async (req, res) => {
@@ -319,4 +339,3 @@ app.listen(PORT, () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
 });
 console.log("Checking getDishSuggestions function:", getDishSuggestions);
-
