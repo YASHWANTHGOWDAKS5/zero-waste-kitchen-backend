@@ -62,7 +62,8 @@ app.get("/api/getItems/:username", async (req, res) => {
 app.get("/api/getExpiringSoon/:username", async (req, res) => {
     try {
         const { username } = req.params;
-        const user = await User.findOne({ username });
+       const user = await User.findOne({ name: username });
+
 
         if (!user) {
             return res.status(404).json({ message: "User not found" });
