@@ -57,7 +57,41 @@ app.get("/api/getItems/:username", async (req, res) => {
         res.status(500).json({ error: "Server error" });
     }
 });
+// ✅ Fetch Expired Items API
+app.get("/api/getExpiredItems/:username", async (req, res) => {
+  try {
+    const { username } = req.params;
+    const user = await User.findOne({ username });
 
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Check if expiryDates exists and is an array
+    if (!Array.isArray(user.expiryDates)) {
+      return res.status(400).json({ message: "Invalid expiry dates data" });
+    }
+
+    // Fetch expired items
+    const expiredItems = user.items
+      .map((item, index) => ({
+        name: item,
+        expiry: user.expiryDates[index] || "N/A",
+      }))
+      .filter((item) => {
+        const expiryDate = new Date(item.expiry);
+        return !isNaN(expiryDate) && expiryDate < today;
+      });
+
+    res.json({ expiredItems });
+  } catch (error) {
+    console.error("❌ Error fetching expired items:", error);
+    res.status(500).json({ message: "Error fetching expired items" });
+  }
+});
 
 // 🟢 Add Ingredients & Expiry Dates
 app.post("/api/add_items", async (req, res) => {
