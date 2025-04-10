@@ -100,11 +100,13 @@ app.get("/api/getExpiringSoon/:username", async (req, res) => {
 });
 app.get("/api/ingredients", async (req, res) => {
     try {
-        const items = await Item.find({});
+        const dishes = await Dish.find({});
         const uniqueIngredients = new Set();
 
-        items.forEach(item => {
-            item.ingredients.forEach(ingredient => uniqueIngredients.add(ingredient));
+        dishes.forEach(dish => {
+            if (dish.ingredients && Array.isArray(dish.ingredients)) {
+                dish.ingredients.forEach(ingredient => uniqueIngredients.add(ingredient));
+            }
         });
 
         res.json(Array.from(uniqueIngredients));
