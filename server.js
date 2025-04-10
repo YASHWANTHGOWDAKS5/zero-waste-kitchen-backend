@@ -251,33 +251,27 @@ const getDishSuggestions = async (userItems) => {
 // 🟢 Fetch Dish Suggestions for Logged-in User
 app.get("/api/suggest_dishes/:username", async (req, res) => {
     try {
-        // Fetch user data from MongoDB
         const user = await User.findOne({ name: req.params.username });
 
         if (!user || !user.items || user.items.length === 0) {
             return res.status(404).json({ message: "No ingredients found for this user" });
         }
 
-        // ✅ Pair items with their expiry dates
         const itemsWithExpiry = user.items.map((item, index) => ({
             name: item,
-            expiryDate: new Date(user.expiryDates[index]) // Convert expiry date to Date object
+            expiryDate: new Date(user.expiryDates[index])
         }));
 
-        // ✅ Filter items expiring within 20 days
         const today = new Date();
         const thresholdDate = new Date();
         thresholdDate.setDate(today.getDate() + 20);
 
-        const validItems = itemsWithExpiry
-            .filter(item => item.expiryDate <= thresholdDate)
-            .map(item => item.name); // Extract only item names
+        const validItems = itemsWithExpiry.filter(item => item.expiryDate <= thresholdDate).map(item => item.name);
 
         if (validItems.length === 0) {
             return res.status(404).json({ message: "No ingredients expiring within 20 days." });
         }
 
-        // ✅ Fetch dish suggestions
         const suggestedDishes = await getDishSuggestions(validItems);
 
         if (!suggestedDishes || suggestedDishes.length === 0) {
@@ -310,27 +304,50 @@ app.get("/api/auth/me", async (req, res) => {
     }
 });
 
-// ✅ Ingredient Schema & Model
-const ItemSchema = new mongoose.Schema({
-    ingredients: [String]
+// ✅ Endpoint to save selected dish in saved_dishes array
+app.post("/api/saveSelectedDish", async (req, res) => {
+    const { username, dish } = req.body;
+
+    if (!username || !dish) {
+        return res.status(400).json({ message: "Username and dish are required." });
+    }
+
+    try {
+        const user = await User.findOne({ name: username });
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found." });
+        }
+
+        if (!user.saved_dishes) {
+            user.saved_dishes = [];
+        }
+
+        user.saved_dishes.push(dish);
+        await user.save();
+
+        res.json({ message: "Dish saved successfully.", saved_dishes: user.saved_dishes });
+    } catch (error) {
+        console.error("Error saving dish:", error);
+        res.status(500).json({ message: "Internal server error." });
+    }
 });
 
-const Item = mongoose.model("Item", ItemSchema, "items");
+// ✅ Endpoint to fetch saved dishes
+app.get("/api/getUsageData/:username", async (req, res) => {
+    const { username } = req.params;
 
-// ✅ Endpoint to get all unique ingredient names
-app.get("/api/ingredients", async (req, res) => {
     try {
-        const items = await Item.find({});
-        const uniqueIngredients = new Set();
+        const user = await User.findOne({ name: username });
 
-        items.forEach(item => {
-            item.ingredients.forEach(ingredient => uniqueIngredients.add(ingredient));
-        });
+        if (!user) {
+            return res.status(404).json({ message: "User not found." });
+        }
 
-        res.json(Array.from(uniqueIngredients));
+        res.json({ saved_dishes: user.saved_dishes });
     } catch (error) {
-        console.error("❌no ingredient found:", error);
-        res.status(500).json({ message: "Internal Server Error" });
+        console.error("Error fetching saved dishes:", error);
+        res.status(500).json({ message: "Internal server error." });
     }
 });
 
