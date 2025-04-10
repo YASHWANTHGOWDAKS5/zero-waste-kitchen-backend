@@ -304,7 +304,6 @@ app.get("/api/auth/me", async (req, res) => {
     }
 });
 
-// ✅ Endpoint to save selected dish in saved_dishes array
 app.post("/api/saveSelectedDish", async (req, res) => {
     const { username, dish } = req.body;
 
@@ -315,32 +314,16 @@ app.post("/api/saveSelectedDish", async (req, res) => {
 
     try {
         console.log(`🔹 Saving dish for user: ${username}`);
-        
-        const user = await User.findOne({ name: username });
 
-        if (!user) {
-            console.log("❌ User not found in database.");
-            return res.status(404).json({ message: "User not found." });
-        }
-
-        if (!user.saved_dishes) {
-            user.saved_dishes = [];
-        }
-
-        // Prevent duplicate dishes
-        const isDishAlreadySaved = user.saved_dishes.some(
-            (savedDish) => savedDish.name === dish.name
+        // Upsert logic: update the user's selected dishes or insert a new document if it doesn't exist
+        const result = await SelectedDish.findOneAndUpdate(
+            { username }, // Filter by username
+            { $push: { dish } }, // Add the dish to the user's dishes array
+            { upsert: true, new: true } // Create a new document if it doesn't exist
         );
 
-        if (!isDishAlreadySaved) {
-            user.saved_dishes.push(dish);
-            await user.save();
-            console.log("✅ Dish saved successfully:", dish);
-            res.json({ message: "Dish saved successfully.", saved_dishes: user.saved_dishes });
-        } else {
-            console.log("❌ Dish already exists in saved dishes.");
-            res.json({ message: "Dish already exists in saved dishes." });
-        }
+        console.log("✅ Dish saved successfully:", result);
+        res.json({ message: "Dish saved successfully.", result });
     } catch (error) {
         console.error("❌ Error saving dish:", error);
         res.status(500).json({ message: "Internal server error." });
