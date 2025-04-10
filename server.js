@@ -249,6 +249,69 @@ const getDishSuggestions = async (userItems) => {
 };
 
 
+// 🟢 Fetch Dish Suggestions for Logged-in User
+app.get("/api/suggest_dishes/:username", async (req, res) => {
+    try {
+        // Fetch user data from MongoDB
+        const user = await User.findOne({ name: req.params.username });
+
+        if (!user || !user.items || user.items.length === 0) {
+            return res.status(404).json({ message: "No ingredients found for this user" });
+        }
+
+        // ✅ Pair items with their expiry dates
+        const itemsWithExpiry = user.items.map((item, index) => ({
+            name: item,
+            expiryDate: new Date(user.expiryDates[index]) // Convert expiry date to Date object
+        }));
+
+        // ✅ Filter items expiring within 20 days
+        const today = new Date();
+        const thresholdDate = new Date();
+        thresholdDate.setDate(today.getDate() + 20);
+
+        const validItems = itemsWithExpiry
+            .filter(item => item.expiryDate <= thresholdDate)
+            .map(item => item.name); // Extract only item names
+
+        if (validItems.length === 0) {
+            return res.status(404).json({ message: "No ingredients expiring within 20 days." });
+        }
+
+        // ✅ Fetch dish suggestions
+        const suggestedDishes = await getDishSuggestions(validItems);
+
+        if (!suggestedDishes || suggestedDishes.length === 0) {
+            return res.status(404).json({ message: "No dish suggestions available for expiring items." });
+        }
+
+        res.json({ dishes: suggestedDishes });
+
+    } catch (error) {
+        console.error("❌ Error suggesting dishes:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+});
+
+// ✅ Fetch Authenticated User
+app.get("/api/auth/me", async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(" ")[1];
+        if (!token) return res.status(401).json({ message: "Unauthorized" });
+
+        const decoded = jwt.verify(token, "your-secret-key");
+        const user = await User.findById(decoded.userId).select("-password");
+
+        if (!user) return res.status(404).json({ message: "User not found" });
+
+        res.json({ user });
+    } catch (error) {
+        console.error("Error fetching user:", error);
+        res.status(500).json({ message: "Server error" });
+    }
+});
+
+
 app.post("/api/saveSelectedDish", async (req, res) => {
     const { username, dish } = req.body;
 
@@ -282,50 +345,6 @@ app.post("/api/saveSelectedDish", async (req, res) => {
             message: "Internal server error.",
             error: error.message || "Unknown error occurred."
         });
-    }
-});
-
-// ✅ Fetch Authenticated User
-app.get("/api/auth/me", async (req, res) => {
-    try {
-        const token = req.headers.authorization?.split(" ")[1];
-        if (!token) return res.status(401).json({ message: "Unauthorized" });
-
-        const decoded = jwt.verify(token, "your-secret-key");
-        const user = await User.findById(decoded.userId).select("-password");
-
-        if (!user) return res.status(404).json({ message: "User not found" });
-
-        res.json({ user });
-    } catch (error) {
-        console.error("Error fetching user:", error);
-        res.status(500).json({ message: "Server error" });
-    }
-});
-
-app.post("/api/saveSelectedDish", async (req, res) => {
-    const { username, dish } = req.body;
-
-    if (!username || !dish) {
-        console.log("❌ Missing username or dish in request payload.");
-        return res.status(400).json({ message: "Username and dish are required." });
-    }
-
-    try {
-        console.log(`🔹 Saving dish for user: ${username}`);
-
-        // Upsert logic: update the user's selected dishes or insert a new document if it doesn't exist
-        const result = await SelectedDish.findOneAndUpdate(
-            { username }, // Filter by username
-            { $push: { dish } }, // Add the dish to the user's dishes array
-            { upsert: true, new: true } // Create a new document if it doesn't exist
-        );
-
-        console.log("✅ Dish saved successfully:", result);
-        res.json({ message: "Dish saved successfully.", result });
-    } catch (error) {
-        console.error("❌ Error saving dish:", error);
-        res.status(500).json({ message: "Internal server error." });
     }
 });
 // ✅ Endpoint to fetch saved dishes
