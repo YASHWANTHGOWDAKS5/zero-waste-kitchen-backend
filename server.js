@@ -236,7 +236,7 @@ const getDishSuggestions = async (userItems) => {
                     name: dish.name,
                     ingredients: dish.ingredients,
                     suggested_due_to: [item],  // 🔥 FIX: Store as an array, not a string
-                    youtube_url: https://www.youtube.com/results?search_query=${dish.name.replace(" ", "+")}+recipe
+                    youtube_url: `https://www.youtube.com/results?search_query=${dish.name.replace(" ", "+")}+recipe` // Fixed
                 });
             });
         });
@@ -389,6 +389,6 @@ app.get("/api/getUsageData/:username", async (req, res) => {
 });
 // 🟢 Start Server
 app.listen(PORT, () => {
-    console.log(Server running on http://localhost:${PORT});
+    console.log(`🚀 Server running on http://localhost:${PORT}`);
 });
 console.log("Checking getDishSuggestions function:", getDishSuggestions);
