@@ -236,7 +236,7 @@ const getDishSuggestions = async (userItems) => {
                     name: dish.name,
                     ingredients: dish.ingredients,
                     suggested_due_to: [item],  // 🔥 FIX: Store as an array, not a string
-                    youtube_url: `https://www.youtube.com/results?search_query=${dish.name.replace(" ", "+")}+recipe` // Fixed
+                    youtube_url: `https://www.youtube.com/results?search_query=${dish.name.replace(" ", "+")}+recipe`
                 });
             });
         });
@@ -334,59 +334,6 @@ app.get("/api/ingredients", async (req, res) => {
     }
 });
 
-// ✅ Schema for Selected Dishes
-const SelectedDishSchema = new mongoose.Schema({
-    username: { type: String, required: true },
-    dish: {
-        name: { type: String, required: true },
-        ingredients: [String],
-        youtube_url: { type: String, required: true }
-    },
-    dateSelected: { type: Date, default: Date.now }
-});
-
-const SelectedDish = mongoose.model("SelectedDish", SelectedDishSchema, "selected_dishes");
-
-// ✅ Endpoint to Save Selected Dishes
-app.post("/api/saveSelectedDish", async (req, res) => {
-    const { username, dish } = req.body;
-
-    if (!username || !dish) {
-        return res.status(400).json({ message: "Username and dish are required." });
-    }
-
-    try {
-        const selectedDish = new SelectedDish({ username, dish });
-        await selectedDish.save();
-
-        res.status(200).json({
-            message: "Dish selected successfully!",
-            selectedDish
-        });
-    } catch (error) {
-        console.error("❌ Error saving selected dish:", error);
-        res.status(500).json({ message: "Internal server error while saving selected dish." });
-    }
-});
-
-// ✅ Endpoint to Fetch User's Usage Data
-app.get("/api/getUsageData/:username", async (req, res) => {
-    const { username } = req.params;
-
-    try {
-        // Fetch all selected dishes by the user
-        const usageData = await SelectedDish.find({ username });
-
-        if (!usageData || usageData.length === 0) {
-            return res.status(404).json({ message: "No usage data found for this user." });
-        }
-
-        res.status(200).json({ usageData });
-    } catch (error) {
-        console.error("❌ Error fetching usage data:", error);
-        res.status(500).json({ message: "Internal server error while fetching usage data." });
-    }
-});
 // 🟢 Start Server
 app.listen(PORT, () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
