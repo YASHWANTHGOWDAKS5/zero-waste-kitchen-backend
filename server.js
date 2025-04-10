@@ -305,18 +305,21 @@ app.get("/api/auth/me", async (req, res) => {
 });
 
 // ✅ Endpoint to save selected dish in saved_dishes array
-// ✅ Endpoint to save selected dish in saved_dishes array
 app.post("/api/saveSelectedDish", async (req, res) => {
     const { username, dish } = req.body;
 
     if (!username || !dish) {
+        console.log("❌ Missing username or dish in request payload.");
         return res.status(400).json({ message: "Username and dish are required." });
     }
 
     try {
+        console.log(`🔹 Saving dish for user: ${username}`);
+        
         const user = await User.findOne({ name: username });
 
         if (!user) {
+            console.log("❌ User not found in database.");
             return res.status(404).json({ message: "User not found." });
         }
 
@@ -324,24 +327,25 @@ app.post("/api/saveSelectedDish", async (req, res) => {
             user.saved_dishes = [];
         }
 
-        // Check if the dish is already saved
+        // Prevent duplicate dishes
         const isDishAlreadySaved = user.saved_dishes.some(
             (savedDish) => savedDish.name === dish.name
         );
 
         if (!isDishAlreadySaved) {
-            user.saved_dishes.push(dish); // Append the new dish
-            await user.save(); // Save the updated user document
+            user.saved_dishes.push(dish);
+            await user.save();
+            console.log("✅ Dish saved successfully:", dish);
             res.json({ message: "Dish saved successfully.", saved_dishes: user.saved_dishes });
         } else {
+            console.log("❌ Dish already exists in saved dishes.");
             res.json({ message: "Dish already exists in saved dishes." });
         }
     } catch (error) {
-        console.error("Error saving dish:", error);
+        console.error("❌ Error saving dish:", error);
         res.status(500).json({ message: "Internal server error." });
     }
 });
-
 // ✅ Endpoint to fetch saved dishes
 app.get("/api/getUsageData/:username", async (req, res) => {
     const { username } = req.params;
