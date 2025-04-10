@@ -248,41 +248,40 @@ const getDishSuggestions = async (userItems) => {
     }
 };
 
-// 🟢 Fetch Dish Suggestions for Logged-in User
-app.get("/api/suggest_dishes/:username", async (req, res) => {
+
+app.post("/api/saveSelectedDish", async (req, res) => {
+    const { username, dish } = req.body;
+
+    if (!username || !dish) {
+        console.log("❌ Missing username or dish in request payload.");
+        return res.status(400).json({ message: "Username and dish are required." });
+    }
+
     try {
-        const user = await User.findOne({ name: req.params.username });
+        console.log(`🔹 Saving dish for user: ${username}`);
 
-        if (!user || !user.items || user.items.length === 0) {
-            return res.status(404).json({ message: "No ingredients found for this user" });
+        // Find the user and add the dish to the saved_dishes array
+        const user = await User.findOneAndUpdate(
+            { name: username }, // Find user by name
+            { $push: { saved_dishes: dish } }, // Add the dish to saved_dishes
+            { new: true } // Return the updated document
+        );
+
+        if (!user) {
+            console.log("❌ User not found.");
+            return res.status(404).json({ message: "User not found." });
         }
 
-        const itemsWithExpiry = user.items.map((item, index) => ({
-            name: item,
-            expiryDate: new Date(user.expiryDates[index])
-        }));
-
-        const today = new Date();
-        const thresholdDate = new Date();
-        thresholdDate.setDate(today.getDate() + 20);
-
-        const validItems = itemsWithExpiry.filter(item => item.expiryDate <= thresholdDate).map(item => item.name);
-
-        if (validItems.length === 0) {
-            return res.status(404).json({ message: "No ingredients expiring within 20 days." });
-        }
-
-        const suggestedDishes = await getDishSuggestions(validItems);
-
-        if (!suggestedDishes || suggestedDishes.length === 0) {
-            return res.status(404).json({ message: "No dish suggestions available for expiring items." });
-        }
-
-        res.json({ dishes: suggestedDishes });
-
+        console.log("✅ Dish saved successfully:", dish);
+        res.json({ message: "Dish saved successfully.", saved_dishes: user.saved_dishes });
     } catch (error) {
-        console.error("❌ Error suggesting dishes:", error);
-        res.status(500).json({ message: "Internal server error" });
+        console.error("❌ Error saving dish:", error);
+
+        // Return a detailed error response for debugging
+        res.status(500).json({
+            message: "Internal server error.",
+            error: error.message || "Unknown error occurred."
+        });
     }
 });
 
