@@ -324,14 +324,18 @@ app.post("/api/saveSelectedDish", async (req, res) => {
             user.saved_dishes = [];
         }
 
-        // Avoid duplicate entries
-        const isDishAlreadySaved = user.saved_dishes.some(savedDish => savedDish.name === dish.name);
-        if (!isDishAlreadySaved) {
-            user.saved_dishes.push(dish);
-        }
+        // Check if the dish is already saved
+        const isDishAlreadySaved = user.saved_dishes.some(
+            (savedDish) => savedDish.name === dish.name
+        );
 
-        await user.save();
-        res.json({ message: "Dish saved successfully.", saved_dishes: user.saved_dishes });
+        if (!isDishAlreadySaved) {
+            user.saved_dishes.push(dish); // Append the new dish
+            await user.save(); // Save the updated user document
+            res.json({ message: "Dish saved successfully.", saved_dishes: user.saved_dishes });
+        } else {
+            res.json({ message: "Dish already exists in saved dishes." });
+        }
     } catch (error) {
         console.error("Error saving dish:", error);
         res.status(500).json({ message: "Internal server error." });
