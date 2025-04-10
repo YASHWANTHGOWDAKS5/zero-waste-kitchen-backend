@@ -305,6 +305,7 @@ app.get("/api/auth/me", async (req, res) => {
 });
 
 // ✅ Endpoint to save selected dish in saved_dishes array
+// ✅ Endpoint to save selected dish in saved_dishes array
 app.post("/api/saveSelectedDish", async (req, res) => {
     const { username, dish } = req.body;
 
@@ -323,9 +324,13 @@ app.post("/api/saveSelectedDish", async (req, res) => {
             user.saved_dishes = [];
         }
 
-        user.saved_dishes.push(dish);
-        await user.save();
+        // Avoid duplicate entries
+        const isDishAlreadySaved = user.saved_dishes.some(savedDish => savedDish.name === dish.name);
+        if (!isDishAlreadySaved) {
+            user.saved_dishes.push(dish);
+        }
 
+        await user.save();
         res.json({ message: "Dish saved successfully.", saved_dishes: user.saved_dishes });
     } catch (error) {
         console.error("Error saving dish:", error);
