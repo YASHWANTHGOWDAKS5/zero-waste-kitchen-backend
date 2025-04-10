@@ -98,6 +98,21 @@ app.get("/api/getExpiringSoon/:username", async (req, res) => {
         res.status(500).json({ message: "Error fetching expiring soon items" });
     }
 });
+app.get("/api/ingredients", async (req, res) => {
+    try {
+        const items = await Item.find({});
+        const uniqueIngredients = new Set();
+
+        items.forEach(item => {
+            item.ingredients.forEach(ingredient => uniqueIngredients.add(ingredient));
+        });
+
+        res.json(Array.from(uniqueIngredients));
+    } catch (error) {
+        console.error("❌ Error fetching ingredients:", error);
+        res.status(500).json({ message: "Internal Server Error" });
+    }
+});
 
 // ✅ Fetch Expired Items API
 app.get("/api/getExpiredItems/:username", async (req, res) => {
