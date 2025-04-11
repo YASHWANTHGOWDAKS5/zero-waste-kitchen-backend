@@ -56,7 +56,29 @@ app.get("/api/getItems/:username", async (req, res) => {
         res.status(500).json({ error: "Server error" });
     }
 });
+app.post("/api/auth/check-email", async (req, res) => {
+  try {
+    const { email } = req.body;
 
+    if (!email) {
+      return res.status(400).json({ msg: "Email is required" });
+    }
+
+    // Check if email exists in the database
+    const existingUser = await User.findOne({ email });
+
+    if (existingUser) {
+      console.log(`Email ${email} is already registered.`);
+      return res.status(200).json({ exists: true, msg: "User already exists" });
+    }
+
+    console.log(`Email ${email} is not registered.`);
+    return res.status(200).json({ exists: false, msg: "Email is available" });
+  } catch (err) {
+    console.error("Error checking email:", err.message);
+    return res.status(500).json({ msg: "Internal server error" });
+  }
+});
 // ✅ Fetch Items Expiring in 4 Days API
 app.get("/api/getExpiringSoon/:username", async (req, res) => {
     try {
