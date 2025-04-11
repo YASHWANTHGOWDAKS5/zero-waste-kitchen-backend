@@ -338,7 +338,7 @@ app.post("/api/saveSelectedDish", async (req, res) => {
     }
 
     try {
-        console.log(🔹 Saving dish for user: ${username});
+        console.log(`🔹Saving dish for user: ${username}`);
 
         // Find the user and add the dish to the saved_dishes array
         const user = await User.findOneAndUpdate(
