@@ -12,6 +12,7 @@ const UserSchema = new mongoose.Schema({
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     items: { type: [String], default: [] }, // Array of items (ingredients)
+quantities: { type: [Number], default: [] },
     expiryDates: { type: [String], default: [] }, // Array of expiry dates as strings
     saved_dishes: { type: [DishSchema], default: [] } // Array of selected dishes using DishSchema
 });
