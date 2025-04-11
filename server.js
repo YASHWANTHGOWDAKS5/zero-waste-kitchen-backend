@@ -253,7 +253,7 @@ const getDishSuggestions = async (userItems) => {
                     name: dish.name,
                     ingredients: dish.ingredients,
                     suggested_due_to: [item],  // 🔥 FIX: Store as an array, not a string
-                    youtube_url: https://www.youtube.com/results?search_query=${dish.name.replace(" ", "+")}+recipe
+youtube_url: `https://www.youtube.com/results?search_query=${dish.name.replace(" ", "+")}+recipe`
                 });
             });
         });
