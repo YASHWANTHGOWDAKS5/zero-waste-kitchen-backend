@@ -270,7 +270,7 @@ const getDishSuggestions = async (userItems) => {
         userItems.forEach((item) => {
             let matchedDishes = allDishes
                 .filter(dish => dish.ingredients.includes(item)) // Find dishes containing the item
-                .slice(0, 6); // Limit to 6 dishes per item
+                .slice(0, 3); // Limit to 6 dishes per item
 
             matchedDishes.forEach((dish) => {
                 suggestedDishes.push({
