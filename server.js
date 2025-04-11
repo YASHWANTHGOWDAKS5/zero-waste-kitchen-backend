@@ -75,10 +75,11 @@ app.post("/api/auth/check-email", async (req, res) => {
     console.log(`Email ${email} is not registered.`);
     return res.status(200).json({ exists: false, msg: "Email is available" });
   } catch (err) {
-    console.error("Error checking email:", err.message);
+    console.error("Error checking email existence:", err.message);
     return res.status(500).json({ msg: "Internal server error" });
   }
 });
+
 // ✅ Fetch Items Expiring in 4 Days API
 app.get("/api/getExpiringSoon/:username", async (req, res) => {
     try {
