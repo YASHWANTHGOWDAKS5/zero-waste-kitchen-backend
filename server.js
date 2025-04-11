@@ -49,8 +49,7 @@ app.get("/api/getItems/:username", async (req, res) => {
 
         res.json({
             items: user.items || [],
-            expiryDates: user.expiryDates || [],
-            quantities: user.quantities || [] // ✅ Include this
+            expiryDates: user.expiryDates || []
         });
     } catch (error) {
         console.error("❌ Error fetching items:", error);
@@ -153,9 +152,10 @@ app.get("/api/getExpiredItems/:username", async (req, res) => {
   }
 });
 
+// 🟢 Add Ingredients & Expiry Dates
 app.post("/api/add_items", async (req, res) => {
-    const { username, items, expiry_dates, quantities } = req.body;
-
+    const { username, items, expiry_dates } = req.body;
+  
     try {
         const user = await User.findOne({ name: username });
 
@@ -163,9 +163,9 @@ app.post("/api/add_items", async (req, res) => {
             return res.status(404).json({ error: "User not found" });
         }
 
+        // Add items & expiryDates to the user's document
         user.items = [...(user.items || []), ...items];
         user.expiryDates = [...(user.expiryDates || []), ...expiry_dates];
-        user.quantities = [...(user.quantities || []), ...(quantities || new Array(items.length).fill(1))]; // ✅ Add quantity handling
 
         await user.save();
 
@@ -175,36 +175,6 @@ app.post("/api/add_items", async (req, res) => {
         res.status(500).json({ error: "Server error" });
     }
 });
-app.put("/api/update_quantity", async (req, res) => {
-    const { username, item, quantity } = req.body;
-
-    if (!username || !item || quantity == null) {
-        return res.status(400).json({ error: "Missing required fields." });
-    }
-
-    try {
-        const user = await User.findOne({ name: username });
-
-        if (!user) {
-            return res.status(404).json({ error: "User not found." });
-        }
-
-        const itemIndex = user.items.indexOf(item);
-
-        if (itemIndex === -1) {
-            return res.status(404).json({ error: "Item not found." });
-        }
-
-        user.quantities[itemIndex] = quantity;
-
-        await user.save();
-        res.json({ message: "Quantity updated successfully.", user });
-    } catch (err) {
-        console.error("Error updating quantity:", err);
-        res.status(500).json({ error: "Server error." });
-    }
-});
-
 
 // 🟢 Update Item Expiry Date
 app.put("/api/update_item", async (req, res) => {
@@ -283,7 +253,7 @@ const getDishSuggestions = async (userItems) => {
                     name: dish.name,
                     ingredients: dish.ingredients,
                     suggested_due_to: [item],  // 🔥 FIX: Store as an array, not a string
-                    youtube_url: `https://www.youtube.com/results?search_query=${dish.name.replace(" ", "+")}+recipe`
+                    youtube_url: https://www.youtube.com/results?search_query=${dish.name.replace(" ", "+")}+recipe
                 });
             });
         });
@@ -368,7 +338,7 @@ app.post("/api/saveSelectedDish", async (req, res) => {
     }
 
     try {
-        console.log(`🔹 Saving dish for user: ${username}`);
+        console.log(🔹 Saving dish for user: ${username});
 
         // Find the user and add the dish to the saved_dishes array
         const user = await User.findOneAndUpdate(
@@ -394,24 +364,28 @@ app.post("/api/saveSelectedDish", async (req, res) => {
         });
     }
 });
+// ✅ Endpoint to fetch saved dishes
 app.get("/api/getUsageData/:username", async (req, res) => {
-  const { username } = req.params;
-  try {
-    const user = await User.findOne({ name: username });
-    if (!user || !user.usageData) {
-      return res.status(404).json({ message: "Usage data not found" });
+    const { username } = req.params;
+
+    try {
+        const user = await User.findOne({ name: username });
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found." });
+        }
+
+        res.json({ saved_dishes: user.saved_dishes });
+    } catch (error) {
+        console.error("Error fetching saved dishes:", error);
+        res.status(500).json({ message: "Internal server error." });
     }
-
-    res.json({ usageData: user.usageData });
-  } catch (err) {
-    console.error("Error fetching usage data:", err);
-    res.status(500).json({ message: "Internal server error" });
-  }
 });
-
 
 // 🟢 Start Server
 app.listen(PORT, () => {
-    console.log(`🚀 Server running on http://localhost:${PORT}`);
+    console.log(🚀 Server running on http://localhost:${PORT});
 });
 console.log("Checking getDishSuggestions function:", getDishSuggestions);
+
+this is the existing server.js
