@@ -98,6 +98,7 @@ app.get("/api/getExpiringSoon/:username", async (req, res) => {
         res.status(500).json({ message: "Error fetching expiring soon items" });
     }
 });
+
 app.get("/api/ingredients", async (req, res) => {
     try {
         const dishes = await Dish.find({});
@@ -246,14 +247,14 @@ const getDishSuggestions = async (userItems) => {
         userItems.forEach((item) => {
             let matchedDishes = allDishes
                 .filter(dish => dish.ingredients.includes(item)) // Find dishes containing the item
-                .slice(0, 6); // Limit to 4 dishes per item
+                .slice(0, 6); // Limit to 6 dishes per item
 
             matchedDishes.forEach((dish) => {
                 suggestedDishes.push({
                     name: dish.name,
                     ingredients: dish.ingredients,
                     suggested_due_to: [item],  // 🔥 FIX: Store as an array, not a string
-youtube_url: `https://www.youtube.com/results?search_query=${dish.name.replace(" ", "+")}+recipe`
+                    youtube_url: `https://www.youtube.com/results?search_query=${dish.name.replace(" ", "+")}+recipe`
                 });
             });
         });
@@ -364,6 +365,7 @@ app.post("/api/saveSelectedDish", async (req, res) => {
         });
     }
 });
+
 // ✅ Endpoint to fetch saved dishes
 app.get("/api/getUsageData/:username", async (req, res) => {
     const { username } = req.params;
@@ -384,8 +386,6 @@ app.get("/api/getUsageData/:username", async (req, res) => {
 
 // 🟢 Start Server
 app.listen(PORT, () => {
-    console.log(🚀 Server running on http://localhost:${PORT});
+    console.log(`🚀 Server running on http://localhost:${PORT}`);
 });
 console.log("Checking getDishSuggestions function:", getDishSuggestions);
-
-this is the existing server.js
