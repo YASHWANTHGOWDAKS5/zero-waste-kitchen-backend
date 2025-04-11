@@ -394,6 +394,20 @@ app.post("/api/saveSelectedDish", async (req, res) => {
         });
     }
 });
+app.get("/api/getUsageData/:username", async (req, res) => {
+  const { username } = req.params;
+  try {
+    const user = await User.findOne({ name: username });
+    if (!user || !user.usageData) {
+      return res.status(404).json({ message: "Usage data not found" });
+    }
+
+    res.json({ usageData: user.usageData });
+  } catch (err) {
+    console.error("Error fetching usage data:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
 
 
 // 🟢 Start Server
