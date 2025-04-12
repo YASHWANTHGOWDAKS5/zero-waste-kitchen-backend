@@ -55,6 +55,40 @@ app.get("/api/getItems/:username", async (req, res) => {
         });
     }
 });
+
+app.delete("/api/deleteSelectedDish", async (req, res) => {
+  try {
+    const { username, dishName } = req.body;
+
+    if (!username || !dishName) {
+      return res.status(400).json({ error: "Username and dish name are required." });
+    }
+
+    const user = await User.findOne({ name: username });
+    if (!user) {
+      return res.status(404).json({ error: "User not found." });
+    }
+
+    // Filter out the dish to be deleted
+    user.saved_dishes = user.saved_dishes.filter(
+      (dish) => dish.name !== dishName
+    );
+
+    await user.save();
+
+    res.json({
+      message: "Dish deleted successfully.",
+      saved_dishes: user.saved_dishes,
+    });
+  } catch (err) {
+    console.error("❌ Error deleting selected dish:", err);
+    res.status(500).json({
+      error: "Server error while deleting selected dish.",
+      details: err.message,
+    });
+  }
+});
+
 app.post("/api/auth/check-email", async (req, res) => {
   try {
     const { email } = req.body;
