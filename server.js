@@ -43,8 +43,8 @@ app.get("/api/getItems/:username", async (req, res) => {
 
         // Ensure all arrays have the same length
         const items = user.items || [];
-        const units = user.units || Array(items.length).fill("pieces");
-        const quantities = user.quantities || Array(items.length).fill("1");
+        const units = user.units || Array(items.length).fill("-");
+        const quantities = user.quantities || Array(items.length).fill("-");
         const expiryDates = user.expiryDates || Array(items.length).fill("No expiry date");
 
         res.json({
