@@ -182,7 +182,7 @@ app.get("/api/getExpiredItems/:username", async (req, res) => {
   }
 });
 
-/ In your /api/add_items endpoint:
+// In your /api/add_items endpoint:
 app.post("/api/add_items", async (req, res) => {
     const { username, items, expiry_dates, quantities, units } = req.body;
   
