@@ -34,33 +34,33 @@ const UserIngredients = mongoose.model("UserIngredients", new mongoose.Schema({
     expiry_dates: [String]
 }, { collection: "user_ingredients" }));
 
-// In your /api/getItems endpoint:
 app.get("/api/getItems/:username", async (req, res) => {
     const username = decodeURIComponent(req.params.username);
 
-    if (!username.trim()) {
-        return res.status(400).json({ error: "Username is required" });
-    }
-
     try {
         const user = await User.findOne({ name: username });
+        if (!user) return res.status(404).json({ error: "User not found" });
 
-        if (!user) {
-            return res.status(404).json({ error: "User not found" });
-        }
+        // Ensure all arrays have the same length
+        const items = user.items || [];
+        const units = user.units || Array(items.length).fill("pieces");
+        const quantities = user.quantities || Array(items.length).fill("1");
+        const expiryDates = user.expiryDates || Array(items.length).fill("No expiry date");
 
         res.json({
-            items: user.items || [],
-            expiryDates: user.expiryDates || [],
-            quantities: user.quantities || [],
-            units: user.units || []
+            items,
+            expiryDates,
+            quantities,
+            units // Make sure this matches the items array
         });
     } catch (error) {
-        console.error("❌ Error fetching items:", error);
-        res.status(500).json({ error: "Server error" });
+        console.error("Error fetching items:", error);
+        res.status(500).json({ 
+            error: "Server error",
+            details: error.message 
+        });
     }
 });
-
 
 app.post("/api/auth/check-email", async (req, res) => {
   try {
