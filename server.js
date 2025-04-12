@@ -180,19 +180,29 @@ app.post("/api/add_items", async (req, res) => {
   
     try {
         const user = await User.findOne({ name: username });
-
         if (!user) return res.status(404).json({ error: "User not found" });
 
-        // Ensure units array exists (default to "pieces" if missing)
-        const validatedUnits = units?.length ? units : Array(items.length).fill("pieces");
+        // Create proper units array (use provided units or default to "pieces")
+        const validatedUnits = units?.length === items.length 
+            ? units 
+            : Array(items.length).fill("pieces");
 
+        // Debug logs to verify what's being stored
+        console.log("Storing units:", validatedUnits);
+
+        // Update arrays
         user.items = [...(user.items || []), ...items];
         user.expiryDates = [...(user.expiryDates || []), ...expiry_dates];
         user.quantities = [...(user.quantities || []), ...quantities];
-        user.units = [...(user.units || []), ...validatedUnits]; // ✅ Store units
+        user.units = [...(user.units || []), ...validatedUnits];
 
         await user.save();
-        res.json({ message: "Items added successfully", user });
+        
+        // Return exactly what was stored
+        res.json({
+            message: "Items added successfully",
+            storedUnits: user.units // Return full units array
+        });
     } catch (err) {
         console.error("Error adding items:", err);
         res.status(500).json({ error: "Server error" });
