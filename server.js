@@ -41,17 +41,16 @@ app.get("/api/getItems/:username", async (req, res) => {
         const user = await User.findOne({ name: username });
         if (!user) return res.status(404).json({ error: "User not found" });
 
-        // Ensure all arrays have the same length
-        const items = user.items || [];
-        const units = user.units || Array(items.length).fill("-");
-        const quantities = user.quantities || Array(items.length).fill("-");
-        const expiryDates = user.expiryDates || Array(items.length).fill("No expiry date");
+        // Process units array - replace null/undefined with "pieces"
+        const processedUnits = (user.units || []).map(unit => 
+            unit === null || unit === undefined ? "pieces" : unit
+        );
 
         res.json({
-            items,
-            expiryDates,
-            quantities,
-            units // Make sure this matches the items array
+            items: user.items || [],
+            expiryDates: user.expiryDates || [],
+            quantities: user.quantities || [],
+            units: processedUnits // Use the processed units array
         });
     } catch (error) {
         console.error("Error fetching items:", error);
@@ -61,7 +60,6 @@ app.get("/api/getItems/:username", async (req, res) => {
         });
     }
 });
-
 app.post("/api/auth/check-email", async (req, res) => {
   try {
     const { email } = req.body;
