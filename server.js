@@ -176,38 +176,55 @@ app.get("/api/getExpiredItems/:username", async (req, res) => {
 });
 
 app.post("/api/add_items", async (req, res) => {
-    const { username, items, expiry_dates, quantities, units } = req.body;
-  
-    try {
-        const user = await User.findOne({ name: username });
-        if (!user) return res.status(404).json({ error: "User not found" });
+  const { username, items, expiry_dates, quantities, units } = req.body;
 
-        // Create proper units array (use provided units or default to "pieces")
-        const validatedUnits = units?.length === items.length 
-            ? units 
-            : Array(items.length).fill("pieces");
+  try {
+    // 🔍 Debug input data
+    console.log("Received body:", req.body);
 
-        // Debug logs to verify what's being stored
-        console.log("Storing units:", validatedUnits);
-
-        // Update arrays
-        user.items = [...(user.items || []), ...items];
-        user.expiryDates = [...(user.expiryDates || []), ...expiry_dates];
-        user.quantities = [...(user.quantities || []), ...quantities];
-        user.units = [...(user.units || []), ...validatedUnits];
-
-        await user.save();
-        
-        // Return exactly what was stored
-        res.json({
-            message: "Items added successfully",
-            storedUnits: user.units // Return full units array
-        });
-    } catch (err) {
-        console.error("Error adding items:", err);
-        res.status(500).json({ error: "Server error" });
+    // 🧪 Check all required fields
+    if (!username || !items || !expiry_dates || !quantities) {
+      return res.status(400).json({ error: "Missing required fields." });
     }
+
+    // ✅ Ensure all arrays are the same length
+    if (
+      items.length !== expiry_dates.length ||
+      items.length !== quantities.length ||
+      (units && items.length !== units.length)
+    ) {
+      return res.status(400).json({ error: "All item arrays must be of equal length." });
+    }
+
+    const user = await User.findOne({ name: username });
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    // ✅ Use provided units or default to "pieces"
+    const validatedUnits = units && units.length === items.length
+      ? units
+      : Array(items.length).fill("pieces");
+
+    console.log("Validated units to store:", validatedUnits);
+
+    // ✅ Merge new items into existing data
+    user.items = [...(user.items || []), ...items];
+    user.expiryDates = [...(user.expiryDates || []), ...expiry_dates];
+    user.quantities = [...(user.quantities || []), ...quantities];
+    user.units = [...(user.units || []), ...validatedUnits];
+
+    await user.save();
+
+    res.json({
+      message: "Items added successfully",
+      addedItems: items,
+      storedUnits: validatedUnits
+    });
+  } catch (err) {
+    console.error("Error adding items:", err);
+    res.status(500).json({ error: "Server error", details: err.message });
+  }
 });
+
 
 // 🟢 Update Item Expiry Date
 app.put("/api/update_item", async (req, res) => {
@@ -254,7 +271,7 @@ app.put("/api/update_item", async (req, res) => {
   }
 });
 app.delete("/api/delete_item", async (req, res) => {
-  const { username, item } = req.query; // Get values from query parameters
+  const { username, item } = req.query;
   console.log("🔹 Received DELETE request:", { username, item });
 
   if (!username || !item) {
@@ -270,19 +287,23 @@ app.delete("/api/delete_item", async (req, res) => {
     }
 
     const itemIndex = user.items.indexOf(item);
+
+    // Remove all related data in sync
     user.items.splice(itemIndex, 1);
     user.expiryDates.splice(itemIndex, 1);
-  user.quantities.splice[itemIndex,1],
-user.units.splice[itemIndex,1],
+    user.quantities.splice(itemIndex, 1); // ✅ fixed from `splice[itemIndex,1]`
+    user.units.splice(itemIndex, 1);      // ✅ fixed from `splice[itemIndex,1]`
 
     await user.save();
-    console.log("✅ Item deleted successfully.");
-    res.json({ message: "Item deleted successfully." });
+
+    console.log("✅ Item and related data deleted successfully.");
+    res.json({ message: "Item and all related data deleted successfully." });
   } catch (error) {
     console.error("❌ Server Error:", error);
     res.status(500).json({ error: "Server error." });
   }
 });
+
 
 // ✅ AI-Based Dish Suggestion Logic
 const getDishSuggestions = async (userItems) => {
