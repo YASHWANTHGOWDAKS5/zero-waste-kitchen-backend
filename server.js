@@ -208,31 +208,47 @@ app.post("/api/add_items", async (req, res) => {
 
 // 🟢 Update Item Expiry Date
 app.put("/api/update_item", async (req, res) => {
+  try {
     const { username, item, expiry_date, quantity, unit } = req.body;
 
-    try {
-        const user = await User.findOne({ name: username });
-
-        if (!user) {
-            return res.status(404).json({ error: "User not found." });
-        }
-
-        const itemIndex = user.items.indexOf(item);
-
-        if (itemIndex === -1) {
-            return res.status(404).json({ error: "Item not found." });
-        }
-
-        user.expiryDates[itemIndex] = expiry_date;
-        if (quantity !== undefined) user.quantities[itemIndex] = quantity;
-        if (unit !== undefined) user.units[itemIndex] = unit; // Add this line
-
-        await user.save();
-        res.json({ message: "Item updated successfully.", user });
-    } catch (err) {
-        console.error("Error updating item:", err);
-        res.status(500).json({ error: "Server error." });
+    // Input validation
+    if (!username || !item) {
+      return res.status(400).json({ error: "Username and item name are required." });
     }
+
+    const user = await User.findOne({ name: username });
+    if (!user) {
+      return res.status(404).json({ error: "User not found." });
+    }
+
+    const itemIndex = user.items.indexOf(item);
+    if (itemIndex === -1) {
+      return res.status(404).json({ error: "Item not found." });
+    }
+
+    // Update fields if they exist in request
+    if (expiry_date) user.expiryDates[itemIndex] = expiry_date;
+    if (quantity !== undefined) user.quantities[itemIndex] = quantity;
+    if (unit !== undefined) user.units[itemIndex] = unit;
+
+    await user.save();
+    
+    res.json({ 
+      message: "Item updated successfully.",
+      updatedItem: {
+        name: user.items[itemIndex],
+        quantity: user.quantities[itemIndex],
+        unit: user.units[itemIndex],
+        expiry: user.expiryDates[itemIndex]
+      }
+    });
+  } catch (err) {
+    console.error("Backend update error:", err);
+    res.status(500).json({ 
+      error: "Server error",
+      details: err.message 
+    });
+  }
 });
 app.delete("/api/delete_item", async (req, res) => {
   const { username, item } = req.query; // Get values from query parameters
