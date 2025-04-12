@@ -193,11 +193,14 @@ app.post("/api/add_items", async (req, res) => {
             return res.status(404).json({ error: "User not found" });
         }
 
-        // Add items & expiryDates to the user's document
+        // Ensure units array exists and has same length as items
+        const validatedUnits = items.map((_, index) => units?.[index] || "pieces");
+
+        // Add all fields to the user's document
         user.items = [...(user.items || []), ...items];
         user.expiryDates = [...(user.expiryDates || []), ...expiry_dates];
         user.quantities = [...(user.quantities || []), ...quantities];
-        user.units = [...(user.units || []), ...units];
+        user.units = [...(user.units || []), ...validatedUnits]; // Add this line
 
         await user.save();
 
@@ -208,14 +211,9 @@ app.post("/api/add_items", async (req, res) => {
     }
 });
 
-
 // 🟢 Update Item Expiry Date
 app.put("/api/update_item", async (req, res) => {
     const { username, item, expiry_date, quantity, unit } = req.body;
-
-    if (!username || !item || !expiry_date) {
-        return res.status(400).json({ error: "Missing required fields." });
-    }
 
     try {
         const user = await User.findOne({ name: username });
@@ -232,7 +230,7 @@ app.put("/api/update_item", async (req, res) => {
 
         user.expiryDates[itemIndex] = expiry_date;
         if (quantity !== undefined) user.quantities[itemIndex] = quantity;
-        if (unit !== undefined) user.units[itemIndex] = unit;
+        if (unit !== undefined) user.units[itemIndex] = unit; // Add this line
 
         await user.save();
         res.json({ message: "Item updated successfully.", user });
