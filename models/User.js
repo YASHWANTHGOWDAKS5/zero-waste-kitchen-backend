@@ -13,6 +13,8 @@ const UserSchema = new mongoose.Schema({
     password: { type: String, required: true },
     items: { type: [String], default: [] }, // Array of items (ingredients)
 quantities: { type: [Number], default: [] },
+      quantities: [String],  // Changed to String to handle decimal values
+  units: [String],   
     expiryDates: { type: [String], default: [] }, // Array of expiry dates as strings
     saved_dishes: { type: [DishSchema], default: [] } // Array of selected dishes using DishSchema
 });
