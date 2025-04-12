@@ -30,9 +30,11 @@ app.use("/api/auth", authRoutes);
 const UserIngredients = mongoose.model("UserIngredients", new mongoose.Schema({
     user_id: { type: String, required: true, unique: true },
     ingredients: [String],
+    quantities: [String],
     expiry_dates: [String]
 }, { collection: "user_ingredients" }));
 
+// In your /api/getItems endpoint:
 app.get("/api/getItems/:username", async (req, res) => {
     const username = decodeURIComponent(req.params.username);
 
@@ -49,13 +51,17 @@ app.get("/api/getItems/:username", async (req, res) => {
 
         res.json({
             items: user.items || [],
-            expiryDates: user.expiryDates || []
+            expiryDates: user.expiryDates || [],
+            quantities: user.quantities || [],
+            units: user.units || []
         });
     } catch (error) {
         console.error("❌ Error fetching items:", error);
         res.status(500).json({ error: "Server error" });
     }
 });
+
+
 app.post("/api/auth/check-email", async (req, res) => {
   try {
     const { email } = req.body;
@@ -176,9 +182,9 @@ app.get("/api/getExpiredItems/:username", async (req, res) => {
   }
 });
 
-// 🟢 Add Ingredients & Expiry Dates
+/ In your /api/add_items endpoint:
 app.post("/api/add_items", async (req, res) => {
-    const { username, items, expiry_dates } = req.body;
+    const { username, items, expiry_dates, quantities, units } = req.body;
   
     try {
         const user = await User.findOne({ name: username });
@@ -190,6 +196,8 @@ app.post("/api/add_items", async (req, res) => {
         // Add items & expiryDates to the user's document
         user.items = [...(user.items || []), ...items];
         user.expiryDates = [...(user.expiryDates || []), ...expiry_dates];
+        user.quantities = [...(user.quantities || []), ...quantities];
+        user.units = [...(user.units || []), ...units];
 
         await user.save();
 
@@ -200,9 +208,10 @@ app.post("/api/add_items", async (req, res) => {
     }
 });
 
+
 // 🟢 Update Item Expiry Date
 app.put("/api/update_item", async (req, res) => {
-    const { username, item, expiry_date } = req.body;
+    const { username, item, expiry_date, quantity, unit } = req.body;
 
     if (!username || !item || !expiry_date) {
         return res.status(400).json({ error: "Missing required fields." });
@@ -222,6 +231,8 @@ app.put("/api/update_item", async (req, res) => {
         }
 
         user.expiryDates[itemIndex] = expiry_date;
+        if (quantity !== undefined) user.quantities[itemIndex] = quantity;
+        if (unit !== undefined) user.units[itemIndex] = unit;
 
         await user.save();
         res.json({ message: "Item updated successfully.", user });
@@ -230,7 +241,6 @@ app.put("/api/update_item", async (req, res) => {
         res.status(500).json({ error: "Server error." });
     }
 });
-
 app.delete("/api/delete_item", async (req, res) => {
   const { username, item } = req.query; // Get values from query parameters
   console.log("🔹 Received DELETE request:", { username, item });
