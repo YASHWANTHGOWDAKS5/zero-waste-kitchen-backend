@@ -272,6 +272,8 @@ app.delete("/api/delete_item", async (req, res) => {
     const itemIndex = user.items.indexOf(item);
     user.items.splice(itemIndex, 1);
     user.expiryDates.splice(itemIndex, 1);
+  user.quantities.splice[itemIndex,1],
+user.units.splice[itemIndex,1],
 
     await user.save();
     console.log("✅ Item deleted successfully.");
