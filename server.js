@@ -182,28 +182,23 @@ app.get("/api/getExpiredItems/:username", async (req, res) => {
   }
 });
 
-// In your /api/add_items endpoint:
 app.post("/api/add_items", async (req, res) => {
     const { username, items, expiry_dates, quantities, units } = req.body;
   
     try {
         const user = await User.findOne({ name: username });
 
-        if (!user) {
-            return res.status(404).json({ error: "User not found" });
-        }
+        if (!user) return res.status(404).json({ error: "User not found" });
 
-        // Ensure units array exists and has same length as items
-        const validatedUnits = items.map((_, index) => units?.[index] || "pieces");
+        // Ensure units array exists (default to "pieces" if missing)
+        const validatedUnits = units?.length ? units : Array(items.length).fill("pieces");
 
-        // Add all fields to the user's document
         user.items = [...(user.items || []), ...items];
         user.expiryDates = [...(user.expiryDates || []), ...expiry_dates];
         user.quantities = [...(user.quantities || []), ...quantities];
-        user.units = [...(user.units || []), ...validatedUnits]; // Add this line
+        user.units = [...(user.units || []), ...validatedUnits]; // ✅ Store units
 
         await user.save();
-
         res.json({ message: "Items added successfully", user });
     } catch (err) {
         console.error("Error adding items:", err);
