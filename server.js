@@ -41,16 +41,11 @@ app.get("/api/getItems/:username", async (req, res) => {
         const user = await User.findOne({ name: username });
         if (!user) return res.status(404).json({ error: "User not found" });
 
-        // Process units array - replace null/undefined with "pieces"
-        const processedUnits = (user.units || []).map(unit => 
-            unit === null || unit === undefined ? "pieces" : unit
-        );
-
         res.json({
             items: user.items || [],
             expiryDates: user.expiryDates || [],
             quantities: user.quantities || [],
-            units: processedUnits // Use the processed units array
+            units: user.units || [] // Return raw units without transformation
         });
     } catch (error) {
         console.error("Error fetching items:", error);
